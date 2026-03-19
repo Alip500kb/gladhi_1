@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
@@ -89,6 +90,63 @@ class UserController extends Controller
             'status' => 'berhasil',
             'token' => $user->createToken('user_insert')->plainTextToken
         ],201);
+    }
+
+    public function updateuser(Request $request,$id) {
+        $valid = Validator::make($request->all(), [
+            'username' => 'sometimes|min:4|max:60',
+            'password' => 'sometimes|min:5'
+        ]);
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'tidak valid',
+                'message' => 'pengguna tidak ditemukan'
+            ],401);
+        } elseif (User::where('username', $request['username'])->exists()) {
+            return response()->json([
+                'status' => 'tidak valid',
+                'message' => 'nama pengguna sudah ada'
+            ],401);
+        } elseif (!Gate::allows('admins')) {
+            return response()->json(['status' => 'gagal', 'message' => 'anda bukan administrator'], 403);
+        }
+
+        $data = $request->only(['username', 'password']);
+        // only() digunakan untuk mengambil var tertentu saja dan jika var kosong mak tidak diambil
+
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request['password']);
+        }
+        $user->update($data);
+
+        return response()->json([
+            'status' => 'berhasil',
+            'username' => $user['username']
+        ]);
+    }
+
+    public function deleteuser($id) {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'tidak ditemukan',
+                'message' => 'pengguna tidak ditemukan'
+            ],403);
+        } elseif (!Gate::allows('admins')) {
+            return response()->json([
+                'status' => 'dilarang',
+                'message' => 'anda bukan administrator'
+            ], 403);
+        }
+
+        $user->delete();
+        return response()->json([
+            'status' => 'berhasil',
+            'message' => 'pengguna telah dihapus'
+        ],204);
     }
 }
 

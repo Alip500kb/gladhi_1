@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Game;
 use App\Models\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
@@ -24,6 +25,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('admins', function (User $user) {
             return $user->role_id == 1;
+        });
+
+        Gate::define('developer', function (User $user) {
+            return $user->role_id == 2;
         });
 
         JsonResource::withoutWrapping();
