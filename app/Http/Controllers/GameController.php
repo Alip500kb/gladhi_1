@@ -49,4 +49,92 @@ class GameController extends Controller
             'slug' => $slug
         ],201);
     }
+
+    public function show($slug) {
+        if (!Game::where('slug', $slug)->exists()) {
+            return response()->json([
+                'status' => 'tidak ditemukan',
+                'message' => 'game tidak ditemukan'
+            ], 404);
+        }
+
+        $game = Game::where('slug', $slug)->get()->map(fn ($game) => [
+            'slug' => $game->slug,
+            'title' => $game->title,
+            'description' => $game->description,
+            'thumbnail' => null,
+            'created_at' => $game->created_at,
+            'created_by' => $game->created_by,
+            'scoreCount' => null,
+            'gamePath' => null
+        ]);
+
+        return response()->json($game,200);
+    }
+
+    public function index(Request $request) {
+
+        $page = $request->query('page', 0);
+        $size = $request->query('size', 5); //(params, nilai default)
+        $sortby = $request->query('sortBy', 'title');
+        $sortdir =$request->query('sortDir', 'desc');
+
+        $game = Game::orderBy($sortby, $sortdir)->skip($page * $size)->take($size)->get()->map(fn ($game) => [
+            'slug' => $game->slug,
+            'title' => $game->title,
+            'description' => $game->description,
+            'thumbnail' => null,
+            'created_at' => $game->created_at,
+            'created_by' => $game->created_by,
+            'scoreCount' => null
+        ]);
+
+        // dd($game);
+
+        return response()->json([
+            'halaman' => $page,
+            'ukuran' => $size,
+            'totalElemen' => $size,
+            'konten' => $game
+        ]);
+    }
+
+    public function update(Request $request,$slug) {
+        $game = Game::where('slug', $slug)->first();
+
+        if (!$game) {
+            return response()->json(['status' => 'tidak ditemukan'],404);
+        } elseif ($game['created_by'] != $request->user()->id) {
+            return response()->json([
+                'status' => 'dilarang',
+                'message' => 'anda bukan penulis game'
+            ],403);
+        }
+
+        $data = $request->only(['title', 'description']);
+
+        $game->update($data);
+
+        return response()->json([
+            'status' => 'keberhasilan'
+        ]);
+    }
+
+    public function destroy(Request $request,$slug) {
+        $game = Game::where('slug', $slug)->first();
+
+        if (!$game) {
+            return response()->json([
+                'status' => 'game tidak ditemukan'
+            ],404);
+        } elseif ($game->created_by != $request->user()->id) {
+            return response()->json([
+                'status' => 'dilarang',
+                'message' => 'anda bukan penulis game'
+            ],403);
+        }
+
+        $game->delete();
+        return response()->json([],204);
+    }
 }

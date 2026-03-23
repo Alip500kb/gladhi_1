@@ -25,4 +25,7 @@ Route::prefix('v1')->group(function () {
 
     // Route Game
     Route::post('/games', [GameController::class, 'gameadd'])->middleware('auth:sanctum');
+    Route::get('/games', [GameController::class, 'index']);
+    Route::get('/games/{slug}', [GameController::class, 'show']);
+    Route::delete('/games/{slug}', [GameController::class, 'destroy'])->middleware('auth:sanctum');
 });
