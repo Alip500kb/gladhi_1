@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Game;
+use App\Models\game_version;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -136,5 +138,60 @@ class GameController extends Controller
 
         $game->delete();
         return response()->json([],204);
+    }
+
+    public function upload(Request $request,$slug) {
+
+        $game = Game::where('slug', $slug)->first();
+        $valid = Validator::make($request->all(),[
+            'zipfile' => 'required|file|mimes:zip',
+            'thumbnail' => 'sometimes|image|mimes:png,jpg,jpeg'
+        ]);
+
+        if ($valid->fails()) {
+            return response()->json($valid->errors(),403);
+        } elseif (!$game) {
+            return response()->json([
+                'status' => 'tidak ditemukan'
+            ],404);
+        } elseif ($request->user()->id != $game->created_by) {
+            return response()->json([
+                'status' => 'dilarang',
+                'message' => 'anda bukan penulis game'
+            ],403);
+        }
+
+        do {
+            $id = rand(1,63636336);
+        } while (game_version::where('id', $id)->exists());
+
+        $gvers = game_version::where('game_id', $game->id)->latest()->first(); //latest digunakan untuk mengurutkan dari yang awal
+        if ($gvers) {
+            $version = $gvers->version + 1;
+        } else {
+            $version = '1';
+        }
+        $filename = Str::random(20);
+
+        $gamefile = $request->file('zipfile');
+        $gamefile->storeAs('gamefile', $filename . '.' . 'zip');
+
+        if ($request->hasFile('thumbnail')) {
+            $thumbnail = $request->file('thumbnail');
+            $thumbnail->storeAs("/gamefile/thumbnail", $filename . '.' . $request->file('thumbnail')->getClientOriginalExtension());
+        }
+        // dd($game->id);
+
+        game_version::create([
+            'id' => $id,
+            'game_id' => $game->id,
+            'version' => $version,
+            'storage_path' => "/gamefile/" . $filename
+        ]);
+
+        return response()->json([
+            'status' => 'berhasil'
+        ],201);
+
     }
 }

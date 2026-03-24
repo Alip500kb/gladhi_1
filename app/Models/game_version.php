@@ -8,6 +8,9 @@ class game_version extends Model
 {
     protected $table = 'game_versions';
     protected $fillable = [
-        'id'
+        'id',
+        'game_id',
+        'version',
+        'storage_path'
     ];
 }

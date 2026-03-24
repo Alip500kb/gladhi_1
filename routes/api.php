@@ -28,4 +28,6 @@ Route::prefix('v1')->group(function () {
     Route::get('/games', [GameController::class, 'index']);
     Route::get('/games/{slug}', [GameController::class, 'show']);
     Route::delete('/games/{slug}', [GameController::class, 'destroy'])->middleware('auth:sanctum');
+    //route untuk upload demo
+    Route::post('/games/{slug}/upload', [GameController::class, 'upload'])->middleware('auth:sanctum');
 });
