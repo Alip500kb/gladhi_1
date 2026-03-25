@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\UserResource;
+use App\Models\Game;
+use App\Models\score;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use App\Models\User;
@@ -43,7 +45,7 @@ class UserController extends Controller
         return new UserResource($pengguna, 'ahy', 'berhasil');
     }
 
-    public function  userdetail($username) {
+    public function userdetail($username) {
         $user = User::where('username', $username)->first();
 
         if (!$user) {
@@ -143,10 +145,13 @@ class UserController extends Controller
         }
 
         $user->delete();
+        $user->tokens()->delete();
         return response()->json([
             'status' => 'berhasil',
             'message' => 'pengguna telah dihapus'
         ],204);
     }
+
+
 }
 

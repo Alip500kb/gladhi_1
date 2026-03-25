@@ -30,4 +30,7 @@ Route::prefix('v1')->group(function () {
     Route::delete('/games/{slug}', [GameController::class, 'destroy'])->middleware('auth:sanctum');
     //route untuk upload demo
     Route::post('/games/{slug}/upload', [GameController::class, 'upload'])->middleware('auth:sanctum');
+    //route untuk score
+    Route::post('/games/{slug}/scores', [GameController::class, 'addscore'])->middleware('auth:sanctum');
+    Route::get('/games/{slug}/scores', [GameController::class, 'score']);
 });

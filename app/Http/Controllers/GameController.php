@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Game;
 use App\Models\game_version;
+use App\Models\score;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
@@ -186,12 +188,60 @@ class GameController extends Controller
             'id' => $id,
             'game_id' => $game->id,
             'version' => $version,
-            'storage_path' => "/gamefile/" . $filename
+            'storage_path' => $filename
         ]);
 
         return response()->json([
             'status' => 'berhasil'
         ],201);
 
+    }
+
+    public function addscore(Request $request,$slug) {
+        $game = Game::where('slug', $slug)->first();
+        $valid = Validator::make($request->all(), [
+            'score' => 'required|numeric'
+        ]);
+
+        if ($valid->fails()) {
+            return response()->json($valid->errors(),403);
+        } elseif (!$game) {
+            return response()->json([
+                'status' => 'tidak ditemukan',
+                'message' => 'game tidak ditemukan'
+            ],404);
+        }
+        $game_version = game_version::where('game_id', $game->id)->latest()->first();
+        score::create(
+            [
+                'user_id' => $request->user()->id,
+                'game_version_id' => $game_version->id,
+                'score' => $request['score']
+            ]
+        );
+        return response()->json([
+            'status' => 'berhasil'
+        ],201);
+    }
+
+    public function score(Request $request,$slug) {
+        $game = Game::where('slug', $slug)->first();
+        if (!$game) {
+            return response()->json([
+                'status' => 'tidak ditemukan',
+                'message' => 'game tidak ditemukan'
+            ],404);
+        }
+
+        $game_version = game_version::where('game_id', $game->id)->latest()->first();
+        $skor = score::where('game_version_id', $game_version->id)->orderBy('score', 'desc')->get()->map(fn ($skor) => [
+            'nama pengguna' => User::find($skor->user_id)->username,
+            'skor' => $skor->score,
+            'timestamp' => null
+        ]);
+        // dd($skor);
+        return response()->json([
+            'skor' => $skor
+        ],200);
     }
 }
